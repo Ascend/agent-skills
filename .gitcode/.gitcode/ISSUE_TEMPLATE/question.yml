@@ -1,0 +1,15 @@
+name: Question|问题咨询
+description: 如果您需要咨询或者讨论问题，请使用此模板。
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Welcome to ask questions and discuss with other members.
+        欢迎提问并与其他社区成员交流讨论。
+  - type: textarea
+    attributes:
+      label: 问题描述
+      description: 请描述下您的问题
+    validations:
+      required: true
