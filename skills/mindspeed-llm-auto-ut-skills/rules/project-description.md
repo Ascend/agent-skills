@@ -1,0 +1,1 @@
+Megatron-LM文件夹中的代码是参考代码，不是MindSpeed-LLM的代码，分析MindSpeed-LLM源码时不需要对其进行扫描。
