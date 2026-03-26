@@ -1,176 +1,76 @@
-# Catlass 矩阵乘法模板总结
+# Catlass 矩阵乘法模板清单
 
-## 样例模板清单
+## 模板速查表
 
-### 00_basic_matmul
-- 理论模板：`Common模板`
-- 工程优化：`流水优化（Multi Buffer）`
-- 关键交付件
-  - host：[00_basic_matmul](catlass/examples/00_basic_matmul/basic_matmul.cpp)
-  - kernel：[basic_matmul.hpp](catlass/include/catlass/gemm/kernel/basic_matmul.hpp)
-  - blockMmad：[block_mmad_pingpong.hpp](catlass/include/catlass/gemm/block/block_mmad_pingpong.hpp)
-- dispatchPolicy：`MmadAtlasA2Pingpong`
+| 模板名 | 类型 | 核心特性 | 适用场景 |
+|--------|------|---------|---------|
+| 00_basic_matmul | Common | 流水优化(Multi Buffer) | 通用场景，性能基线 |
+| 04_padding_matmul | Common | Multi Buffer + Padding(ND) | Stride 非 512B 对齐 |
+| 06_optimized_matmul | Common | Multi Buffer + Preload + Padding(NZ) + ShuffleK + 小M指令替换 | 泛化性强，复杂场景 |
+| 09_splitk_matmul | MultiCoreSplitK | Multi Buffer | 基本任务块少、K轴大 |
+| 21_basic_matmul_preload_zN | Common | Multi Buffer + Preload + ShuffleK | zN格式，中等复杂度 |
+| 22_padding_splitk_matmul | MultiCoreSplitK | Multi Buffer + Padding(ND) | SplitK + 非对齐Stride |
+| 25_matmul_full_loadA | Common | Multi Buffer + L1常驻 | A矩阵可全载入L1 |
+| 31_small_matmul | Common | Multi Buffer + Scalar消减 | 小Shape，基本任务块≤AIC数 |
+| 34_single_core_splitk_matmul | SingleCoreSplitK | Multi Buffer + Padding(NZ) + 写出优化 | 单核切K场景 |
 
-### 04_padding_matmul
-- 理论模板：`Common模板`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `读取带宽优化（padding）- PaddingMatrixND`
-- 关键交付件
-  - host：[04_padding_matmul](catlass/examples/04_padding_matmul/padding_matmul.cpp)
-  - kernel：[padding_matmul.hpp](catlass/include/catlass/gemm/kernel/padding_matmul.hpp)
-  - blockMmad：[block_mmad_pingpong.hpp](catlass/include/catlass/gemm/block/block_mmad_pingpong.hpp)
-- dispatchPolicy：`MmadAtlasA2Pingpong`
+## 理论模板
 
-### 06_optimized_matmul
-- 理论模板：`Common模板`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `流水优化（Preload）`
-  - `读取带宽优化（Padding）- PaddingMatrixNZ`
-  - `读取带宽优化（ShuffleK）`
-  - `读取带宽优化（小M下指令替换）`（需要修改样例使能）
-- 关键交付件
-  - host：[06_optimized_matmul](catlass/examples/06_optimized_matmul/optimized_matmul.cpp)
-  - kernel：[optimized_matmul.hpp](catlass/include/catlass/gemm/kernel/optimized_matmul.hpp)
-  - Padding前处理组件：[padding_matmul.hpp](catlass/include/catlass/gemm/kernel/padding_matmul.hpp)
-  - blockMmad：[block_mmad_preload.hpp](catlass/include/catlass/gemm/block/block_mmad_preload.hpp)
-- dispatchPolicy：`MmadAtlasA2Preload`
+| 模板 | 分核策略 | 特点 |
+|------|---------|------|
+| Common | M、N 方向分核 | 标准分块，每个任务块搬运 `m₁K + Kn₁` |
+| MultiCoreSplitK | M、N + K 方向分核 | 更易负载均衡，但有 ReduceAdd 开销 |
+| SingleCoreSplitK | 大块 m₁n₁ + K切分 | 减少读取，atomicAdd GM 累加 |
 
-### 09_splitk_matmul
-- 理论模板：`多核切K模板 MultiCoreSplitK`
-- 工程优化：`流水优化（Multi Buffer）`
-- 关键交付件
-  - host：[09_splitk_matmul](catlass/examples/09_splitk_matmul/optimized_matmul.cpp)
-  - kernel：[splitk_matmul.hpp](catlass/include/catlass/gemm/kernel/splitk_matmul.hpp)
-  - blockMmad：[block_mmad_pingpong.hpp](catlass/include/catlass/gemm/block/block_mmad_pingpong.hpp)
-- dispatchPolicy：`MmadAtlasA2Pingpong`
+## 工程优化手段
 
-### 21_basic_matmul_preload_zN
-- 理论模板：`Common模板`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `流水优化（Preload）`
-  - `读取带宽优化（ShuffleK）`
-- 关键交付件
-  - host：[21_basic_matmul_preload_zN](catlass/examples/09_splitk_matmul/basic_matmul_preload_zN.cpp)
-  - kernel：[basic_matmul_preload.hpp](catlass/include/catlass/gemm/kernel/basic_matmul_preload.hpp)
-  - blockMmad：[block_mmad_preload.hpp](catlass/include/catlass/gemm/block/block_mmad_preload.hpp)
-- dispatchPolicy：`MmadAtlasA2Preload`
-
-### 22_padding_splitk_matmul
-- 理论模板：`多核切K模板 MultiCoreSplitK`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `读取带宽优化（padding）- PaddingMatrixND`
-- 关键交付件
-  - host：[22_padding_splitk_matmul](catlass/examples/22_padding_splitk_matmul/padding_splitk_matmul.cpp)
-  - kernel：[padding_splitk_matmul.hpp](catlass/include/catlass/gemm/kernel/padding_splitk_matmul.hpp)
-  - Padding前处理组件：[padding_matmul.hpp](catlass/include/catlass/gemm/kernel/padding_matmul.hpp)
-  - SplitkReduceAdd后处理组件：[splitk_matmul.hpp](catlass/include/catlass/gemm/kernel/splitk_matmul.hpp)
-  - blockMmad：[block_mmad_pingpong.hpp](catlass/include/catlass/gemm/block/block_mmad_pingpong.hpp)
-- dispatchPolicy：`MmadAtlasA2Pingpong`
-
-### 25_matmul_full_loadA
-- 理论模板：`Common模板`
-- 工程优化：
-  - `流水优化（Multi Buffer）`(全载的A矩阵在L1上不使用多buffer)
-  - `读取带宽优化（L1常驻）`
-- 关键交付件
-  - host：[25_matmul_full_loadA](catlass/examples/09_splitk_matmul/25_matmul_full_loadA.cpp)
-  - kernel：[matmul_full_loadA.hpp](catlass/include/catlass/gemm/kernel/matmul_full_loadA.hpp)
-  - blockMmad：[block_mmad_pingpong_full_loadA.hpp](catlass/include/catlass/gemm/block/block_mmad_pingpong_full_loadA.hpp)
-- dispatchPolicy：`MmadAtlasA2FullLoadA`
-- BlockScheduler：`GemmIdentityBlockSwizzleL1FullLoad`
-
-### 31_small_matmul
-- 理论模板：`Common模板`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `Scalar开销消减`
-- 关键交付件
-  - host：[31_small_matmul](catlass/examples/31_small_matmul/small_matmul.cpp)
-  - kernel：[small_matmul.hpp](catlass/include/catlass/gemm/kernel/small_matmul.hpp)
-  - blockMmad：[block_mmad_small.hpp](catlass/include/catlass/gemm/block/block_mmad_small.hpp)
-- dispatchPolicy：`MmadAtlasA2Small`
-
-### 34_single_core_splitk_matmul
-- 理论模板：`单核切K模板 SingleCoreSplitK`
-- 工程优化：
-  - `流水优化（Multi Buffer）`
-  - `读取带宽优化（Padding）- PaddingMatrixNZ`
-  - `写出带宽优化`
-- 关键交付件
-  - host：[34_single_core_splitk_matmul](catlass/examples/34_single_core_splitk_matmul/single_core_splitk.cpp)
-  - kernel：[single_core_slicek_matmul.hpp](catlass/include/catlass/gemm/kernel/single_core_slicek_matmul.hpp)
-  - Padding前处理组件和RemovePaddingNDAndCast后处理组件：[padding_matmul.hpp](catlass/include/catlass/gemm/kernel/padding_matmul.hpp)
-  - blockMmad：[block_mmad_single_core_splitk.hpp](catlass/include/catlass/gemm/block/block_mmad_single_core_splitk.hpp)
-- dispatchPolicy：`MmadAtlasA2SingleCoreSplitk`
-- BlockScheduler：`SingleCoreSplitkGemmIdentityBlockSwizzle`
-
-## 理论模板清单
-
-### Common模板
-- 采用 $M$、$N$ 方向分核，按照$m_1$、$n_1$切分
-- 产生$rac{MN}{m_1n_1}$个基本任务块、分配给AIC核完成搬运和计算
-- 每个基本任务块需要搬运$m_1K+Kn_1$的数据、计算得到$m_1n_1$的结果并搬出
-
-### 多核切K模板 MultiCoreSplitK
-- 在$M$、$N$方向切分的基础上，引入$K$轴切分
-- 产生$rac{MNK}{m_1n_1k}$个基本任务块、分配给AIC核完成搬运和计算
-- 每个基本任务块需要搬运$m_1k+kn_1$的数据、计算得到$m_1n_1$的结果并搬出
-- 更易负载均衡，但写出数据量增加，并产生后处理ReduceAdd的开销
-
-### 单核切K模板 SingleCoreSplitK
-- 为了减少读取数据量，进一步增大抽象上的$m_1$、$n_1$
-- 考虑将$m_1k_1$的tile块直接与对应的所有$k_1n_1$的tile块完成计算
-- 输出$m_0n_0$的tile块没法在$L0C$常驻累加，需要及时搬出，通过`atomicAdd`在`GM`上累加
-- 搬入数据量减少，写出数据量增加
-
-## 工程优化清单
-
-### 流水优化（Multi Buffer）
-- 在L1/L0A/L0B/L0C上启用多buffer，使得流水尽可能并行
-- 提升效率，所有blockMmad组件均使能
-
-### 流水优化（Preload）
-- 针对GM->L1过程，读取当前轮次的数据时，计算上一轮读取的数据
-- 减缓MTE2上的搬运空泡
-- 对应dispatchPolicy：`MmadAtlasA2Preload`、`MmadAtlasA2PreloadAsync`等
-
-### 读取带宽优化（Padding）
-- 针对Stride非512B对齐、搬运指令限制、ND2NZ随路转换带宽损失等问题
-- 三种重排方式：`PaddingMatrixND`、`PaddingMatrixBlockND`、`PaddingMatrixNZ`
-
-### 读取带宽优化（ShuffleK）
-- 根据$CoreIdx$来偏移起始搬运序号$j$，从时间上错开，避免同地址访问冲突
-- 减少数据读取冲突，提高读取带宽
-
-### 读取带宽优化（小M下指令替换）
-- 当$M$很小时（例如$M$ < 8），采用`for`循环每次搬运一行，并在每一行调用`DataCopy`进行多次搬运
-
-### 读取带宽优化（L1常驻）
-- 采用tile块常驻L1的方式，减少tile块数据的重复读取，等效提升了读取带宽
-- 例如`25_matmul_full_loadA`和`34_single_core_splitk_matmul`
-
-### Scalar开销消减
-- 对于小Shape场景，消减冗余的scalar计算
-- kernel内不使用 BlockScheduler，手动计算每个物理核对应的任务块
-- 消除基本块循环，简化offset相关计算
-
-### 写出带宽优化
-- 针对写出时`dstStride`未进行512B对齐、NZ2ND随路格式转换带宽损失等问题
-- 四种重排方式，使用局部或全量workSpace
+| 优化 | 作用 | 对应模板 |
+|------|------|---------|
+| Multi Buffer | L1/L0 多 buffer 流水并行 | 所有模板 |
+| Preload | GM→L1 与计算重叠，减少 MTE2 空泡 | 06, 21 |
+| Padding (ND/NZ/BlockND) | 解决 Stride 非对齐、ND2NZ 带宽损失 | 04, 06, 22, 34 |
+| ShuffleK | CoreIdx 偏移起始序号，避免同地址冲突 | 06, 21 |
+| 小M指令替换 | M<8 时逐行搬运 | 06 |
+| L1常驻 | tile 块常驻 L1，减少重复读取 | 25, 34 |
+| Scalar消减 | 小 Shape 消减冗余标量计算 | 31 |
+| 写出优化 | 解决 dstStride 对齐、NZ2ND 转换损失 | 34 |
 
 ## 模板选择指南
 
-1. 先尝试基于[00_basic_matmul]进行TileShape调优并获得**性能基线**
+1. **先用 00_basic_matmul 建立性能基线**，调 TileShape 后测性能
+2. 按场景选择：
+   - 小 Shape（任务块 ≤ AIC 数、K 较小）→ **31_small_matmul**
+   - 任务块少且 K 大 → **09_splitk_matmul** 或 **22_padding_splitk_matmul**
+   - 泛化场景 → **06_optimized_matmul** 或 **21_basic_matmul_preload_zN**
+   - A 可 L1 常驻 → **25_matmul_full_loadA**
+3. Stride 非 512B 对齐时考虑 Padding 前处理，但注意 Padding 开销
 
-2. 依次识别是否满足各模板适合场景：
-   - [31_small_matmul]：基本任务块小于AIC数，且$K$轴较小
-   - [09_splitk_matmul]或[22_padding_splitk_matmul]：基本任务块小于一半AIC数且$K$轴够大，或基本任务块小于3块且$K$轴不会小
-   - [06_optimized_matmul]和[21_basic_matmul_preload_zN]：泛化性更强，适用于剩余场景
+## DispatchPolicy 速查
 
-3. 当Stride非512B对齐时可以考虑使用Padding前处理，但需要考虑Padding带来的开销以及MIX算子编译启动的开销
+| DispatchPolicy | 对应优化 |
+|---------------|---------|
+| `MmadAtlasA2Pingpong` | Multi Buffer（默认） |
+| `MmadAtlasA2Preload` | Multi Buffer + Preload |
+| `MmadAtlasA2Small` | 小 Shape 优化 |
+| `MmadAtlasA2SingleCoreSplitk` | 单核切K |
+| `MmadAtlasA2FullLoadA` | L1 全载 |
 
-4. 全载特性的使用[25_matmul_full_loadA]和单核切K方案[34_single_core_splitk_matmul]的适用场景待完善
+## 工程化模板参考
+
+`catlass/examples/advanced/basic_matmul_aclnn` 是算子工程结构的**核心参考**，包含：
+
+| 文件 | 路径 | 用途 |
+|------|------|------|
+| tiling.h | `advanced/basic_matmul_aclnn/op_host/catlass_basic_matmul_tiling.h` | Tiling 数据结构（宏定义方式） |
+| def+infershape+tiling | `advanced/basic_matmul_aclnn/op_host/catlass_basic_matmul.cpp` | OpDef 注册、InferShape、TilingFunc 合一 |
+| op_kernel | `advanced/basic_matmul_aclnn/op_kernel/catlass_basic_matmul.cpp` | Device 调用：`CatlassBasicMatmulTemplate` 封装 Kernel，`TILING_KEY_IS` 分支实例化 |
+| test_aclnn | `advanced/basic_matmul_aclnn/basic_matmul_aclnn.cpp` | aclnn 两段式调用示例 |
+
+该示例展示了 00_basic_matmul 从 standalone example 到 op_host/op_kernel 分离工程的**适配方式**。
+
+## 详细参考
+
+本文件为速查表，每个模板的详细理论模板、工程优化点、约束说明请参考 catlass 官方文档：
+- `catlass/docs/2_Design/01_kernel_design/04_matmul_summary.md` — 全量模板清单与详细分析（500+ 行）
+- `catlass/docs/2_Design/01_kernel_design/03_dispatch_policies.md` — DispatchPolicy 参数详解
+- `catlass/docs/2_Design/01_kernel_design/02_swizzle.md` — Swizzle 策略图解
