@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<block name="OpsMathInc" copy_type="delivery" src_path="" dst_path="" install_path="" install_own="$username:$usergroup" install_mod="550"
+       install_type="all" pkg_feature="opp_binary">
+    <file_info copy_type="source" src_path="common/inc/external/" dst_path="include/" install_path="$(TARGET_ENV)/include" install_type="all">
+        <file value="aclnn_kernels" install_mod="550"/>
+    </file_info>
+    <file_info copy_type="source" src_path="" dst_path="es_packages/include" install_path="$(TARGET_ENV)/include/es" install_type="all">
+        <file value="es_math" install_mod="550"/>
+    </file_info>
+    <file_info copy_type="delivery" src_path="" dst_path="built-in/op_impl/aicpu/" install_path="opp/built-in/op_impl/aicpu/" install_type="all" optional="true">
+        <file value="config" install_mod="755"/>
+        <file value="kernel" install_mod="755"/>
+    </file_info>
+    <file_info copy_type="delivery" src_path="" dst_path="built-in/op_graph/inc" install_path="opp/built-in/op_graph/inc" install_type="all">
+        <file value="ops_proto_math.h" install_mod="550"/>
+    </file_info>
+    <file_info value="opgraph_math_lib" copy_type="delivery" src_path="" dst_path="built-in/op_graph/lib/linux/$(ARCH)/" install_path="opp/built-in/op_graph/lib/linux/$(ARCH)">
+        <file value="libopgraph_math.so" install_mod="550"/>
+    </file_info>
+    <file_info value="onnxplugin_math_lib" copy_type="delivery" src_path="" dst_path="built-in/framework/onnx/" install_path="opp/built-in/framework/onnx">
+        <file value="libop_math_onnx_plugin.so" install_mod="550"/>
+    </file_info>
+    <file_info copy_type="delivery" src_path="" dst_path="built-in/op_impl/ai_core/tbe" install_path="opp/built-in/op_impl/ai_core/tbe" install_type="all">
+        <file value="config" install_mod="550"/>
+    </file_info>
+    <file_info copy_type="delivery" src_path="" dst_path="built-in/op_impl/ai_core/tbe" install_path="opp/built-in/op_impl/ai_core/tbe" install_type="all">
+        <file value="impl" install_mod="550"/>
+    </file_info>
+    <file_info copy_type="delivery" src_path="" dst_path="built-in/op_impl/ai_core/tbe" install_path="opp/built-in/op_impl/ai_core/tbe" install_type="all" optional="true">
+        <file value="kernel" install_mod="550"/>
+    </file_info>
+    <file_info value="ophost_math_lib" copy_type="delivery" src_path="" dst_path="built-in/op_impl/ai_core/tbe/op_host/lib/linux/$(ARCH)/"
+        install_path="opp/built-in/op_impl/ai_core/tbe/op_host/lib/linux/$(ARCH)/">
+        <file value="libophost_math.so" install_mod="550"/>
+    </file_info>
+</block>

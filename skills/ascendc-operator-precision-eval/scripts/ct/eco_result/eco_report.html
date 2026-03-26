@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AscendC 算子精度验证报告</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, "SimHei", sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        h2 {
+            color: #3498db;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 22px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+        }
+        
+        h3 {
+            color: #27ae60;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .formula {
+            background-color: #f8f9fa;
+            border-left: 4px solid #3498db;
+            padding: 10px;
+            margin: 15px 0;
+            font-family: "Courier New", monospace;
+            white-space: pre-wrap;
+        }
+        
+        .status-pass {
+            color: #27ae60;
+            font-weight: bold;
+        }
+        
+        .status-fail {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        
+        .result-section {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        .image-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .image-container img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        
+        .log-section {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: "Courier New", monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+        
+        .placeholder {
+            background-color: #fff3cd;
+            padding: 2px 5px;
+            border: 1px dashed #ffc107;
+            border-radius: 3px;
+            font-weight: bold;
+            color: #856404;
+        }
+        
+        .center-text {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AscendC 算子精度验证报告</h1>
+        <div class="center-text">
+            <strong>单标杆比对模式</strong>
+        </div>
+        
+        <!-- 1. 算子基本信息 -->
+        <h2>1. 算子基本信息</h2>
+        <table>
+            <tr>
+                <th>算子名称</th>
+                <th>数据类型</th>
+                <th>输出形状</th>
+            </tr>
+            <tr>
+                <td><span class="placeholder">自定义算子</span></td>
+                <td><span class="placeholder">FLOAT32</span></td>
+                <td><span class="placeholder">(64, 64)</span></td>
+            </tr>
+        </table>
+        
+        <!-- 2. 测试环境 -->
+        <h2>2. 测试环境</h2>
+        <table>
+            <tr>
+                <th>项目</th>
+                <th>详细信息</th>
+            </tr>
+            <tr>
+                <td>硬件平台</td>
+                <td><span class="placeholder">Ascend</span></td>
+            </tr>
+            <tr>
+                <td>软件版本</td>
+                <td><span class="placeholder">未知</span></td>
+            </tr>
+            <tr>
+                <td>标杆平台</td>
+                <td><span class="placeholder">CPU</span></td>
+            </tr>
+            <tr>
+                <td>测试工具</td>
+                <td><span class="placeholder">CT工具生态算子精度验证</span></td>
+            </tr>
+        </table>
+        
+        <!-- 3. 测试数据信息 -->
+        <h2>3. 测试数据信息</h2>
+        <table>
+            <tr>
+                <th>数据类型</th>
+                <th>生成方式</th>
+                <th>分布类型</th>
+                <th>数据规模</th>
+                <th>范围</th>
+            </tr>
+            <tr>
+                <td><span class="placeholder">FLOAT32</span></td>
+                <td><span class="placeholder">随机生成</span></td>
+                <td><span class="placeholder">均匀分布</span></td>
+                <td><span class="placeholder">4096</span></td>
+                <td><span class="placeholder">[0, 1]</span></td>
+            </tr>
+        </table>
+        
+        <!-- 4. 精度验证结果 -->
+        <h2>4. 精度验证结果</h2>
+        
+        <!-- 4.1 误差指标计算 -->
+        <h3>4.1 误差指标计算</h3>
+        <p><strong>平均相对误差（MERE）</strong>：</p>
+        <div class="formula">
+            MERE = avg(abs(actual - golden) / (abs(golden) + 1e-7)) = <span class="placeholder">6.642197e-03</span>
+        </div>
+        
+        <p><strong>最大相对误差（MARE）</strong>：</p>
+        <div class="formula">
+            MARE = max(abs(actual - golden) / (abs(golden) + 1e-7)) = <span class="placeholder">3.458786e+00</span>
+        </div>
+        
+        <!-- 4.2 与阈值对比 -->
+        <h3>4.2 与阈值对比</h3>
+        <table>
+            <tr>
+                <th>指标</th>
+                <th>计算值</th>
+                <th>阈值</th>
+            </tr>
+            <tr>
+                <td>MERE</td>
+                <td><span class="placeholder">6.642197e-03</span></td>
+                <td><span class="placeholder">1.220703e-04</span> (<span class="placeholder">FLOAT32</span>阈值)</td>
+            </tr>
+            <tr>
+                <td>MARE</td>
+                <td><span class="placeholder">3.458786e+00</span></td>
+                <td><span class="placeholder">1.220703e-03</span> (<span class="placeholder">FLOAT32</span>阈值×10)</td>
+            </tr>
+        </table>
+        
+        <!-- 5. 结果判定 -->
+        <h2>5. 结果判定</h2>
+        <div class="result-section">
+            <!-- 5.1 判定条件检查 -->
+            <h3>5.1 判定条件检查</h3>
+            <ul>
+                <li><span class="placeholder">❌</span> MERE (<span class="placeholder">6.642197e-03</span>) < Threshold (<span class="placeholder">1.220703e-04</span>)</li>
+                <li><span class="placeholder">❌</span> MARE (<span class="placeholder">3.458786e+00</span>) < 10×Threshold (<span class="placeholder">1.220703e-03</span>)</li>
+            </ul>
+            
+            <!-- 5.2 最终结果 -->
+            <h3>5.2 最终结果</h3>
+            <p><strong>状态</strong>：<span class="placeholder status-fail">FAIL</span></p>
+            <p><strong>结论</strong>：<span class="placeholder">精度验证失败</span></p>
+        </div>
+        
+        <!-- 6. 详细分析 -->
+        <h2>6. 详细分析</h2>
+        
+        <!-- 6.1 误差分布统计 -->
+        <h3>6.1 误差分布统计</h3>
+        <table>
+            <tr>
+                <th>统计指标</th>
+                <th>值</th>
+            </tr>
+            <tr>
+                <td>样本总数</td>
+                <td><span class="placeholder">4096</span></td>
+            </tr>
+            <tr>
+                <td>平均误差</td>
+                <td><span class="placeholder">6.642197e-03</span></td>
+            </tr>
+            <tr>
+                <td>中位数误差</td>
+                <td><span class="placeholder">未知</span></td>
+            </tr>
+            <tr>
+                <td>最小误差</td>
+                <td><span class="placeholder">未知</span></td>
+            </tr>
+            <tr>
+                <td>最大误差</td>
+                <td><span class="placeholder">3.458786e+00</span></td>
+            </tr>
+            <tr>
+                <td>标准差</td>
+                <td><span class="placeholder">未知</span></td>
+            </tr>
+        </table>
+        
+        <!-- 6.2 标准误差分布图 -->
+        <h3>6.2 标准误差分布图</h3>
+        <p>使用标准方法生成的误差分布分析图，阈值使用报告中指定的<span class="placeholder">FLOAT32</span>阈值 (<span class="placeholder">1.220703e-04</span>)。</p>
+        <div class="image-container">
+            <img src="eco_viz_Standard.png" alt="标准误差分布图">
+        </div>
+        <p><strong>分析说明：</strong>标准误差分布图展示了误差的整体分布情况，帮助了解误差的整体分布特征。</p>
+        
+        <!-- 6.3 空间分布分析 -->
+        <h3>6.3 空间分布分析</h3>
+        <p>使用 <code>ct viz test golden --spatial</code> 方法生成的空间分布分析数据，阈值使用报告中指定的<span class="placeholder">FLOAT32</span>阈值 (<span class="placeholder">1.220703e-04</span>)。</p>
+        <div class="image-container">
+            <img src="eco_viz_spatial_bias.png" alt="空间分布热力图">
+        </div>
+        <p><strong>分析说明：</strong>热力图展示了不同位置的误差分布情况，颜色越深表示误差越大。通过此图可以直观地观察到误差较大的区域，帮助定位可能存在的问题。</p>
+        
+
+        
+        <!-- 8. 结论与建议 -->
+        <h2>8. 结论与建议</h2>
+        
+        <!-- 8.1 结论 -->
+        <h3>8.1 结论</h3>
+        <ul>
+            <li><span class="placeholder">算子精度验证结果：未通过</span></li>
+            <li><span class="placeholder">平均相对误差(MERE)为6.642197e-03，大于等于阈值1.220703e-04</span></li>
+            <li><span class="placeholder">最大相对误差(MARE)为3.458786e+00，大于等于10×阈值1.220703e-03</span></li>
+        </ul>
+        
+        <!-- 8.2 建议 -->
+        <h3>8.2 建议</h3>
+        <ul>
+            <li><span class="placeholder">由于精度验证未通过，建议重点检查算子实现，特别是可能导致大误差的计算步骤</span></li>
+            <li><span class="placeholder">结合第6.2节的空间分布热力图，分析误差较大的区域，查找异常值出现的规律</span></li>
+            <li><span class="placeholder">热力图中颜色较深的区域表示误差较大，建议关注这些区域的计算逻辑，针对性地进行优化</span></li>
+        </ul>
+    </div>
+</body>
+</html>
