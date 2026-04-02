@@ -1,7 +1,0 @@
-tensorflow==2.20.0
-numpy
-decorator
-sympy
-scipy
-attrs
-psutil

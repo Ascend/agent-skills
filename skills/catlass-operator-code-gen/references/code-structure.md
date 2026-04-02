@@ -56,14 +56,15 @@ ls ops/<op_name>/op_kernel/  # 应有 *.cpp, *.h
 ls ops/<op_name>/examples/   # 应有 test_aclnn_*.cpp
 ```
 
-`op_kernel/CMakeLists.txt` 若骨架未带齐 catlass 选项，须按 [kernel-rules.md](./kernel-rules.md) 补齐。
+`op_kernel/CMakeLists.txt` 若骨架未带齐 catlass 选项，须按 [kernel-rules.md](./kernel-rules.md) 在 `scripts/kernel/binary_config/ascendc_config.json` 中配置编译选项。
 
 ---
 
 ## 结构级检查（仅「有没有、放哪」）
 
-- [ ] **OPS_PROJECT_ROOT** 下存在 `catlass/include`（与 `ops/` 同级，不在 `ops/<op>/` 内）；克隆与 CMake 细则见 [kernel-rules.md](./kernel-rules.md)
+- [ ] **OPS_PROJECT_ROOT** 下存在 `catlass/include`（与 `ops/` 同级，不在 `ops/<op>/` 内）；克隆细则见 [kernel-rules.md](./op_kernel/kernel-rules.md)
 - [ ] 算子目录由 `build.sh --genop=ops/<op_name>` 生成，非手搓空目录
+- [ ] `scripts/kernel/binary_config/ascendc_config.json` 中已配置算子编译选项（见 [compile-options.md](./compile-options.md)）
 - [ ] `op_host` 下 tiling / infershape / def 三逻辑分文件存在，且与 `CMakeLists.txt` 一致
 - [ ] `op_kernel` 下源码与 `CMakeLists.txt` 存在
 - [ ] `examples/test_aclnn_<op_name>.cpp` 路径与命名符合工程约定

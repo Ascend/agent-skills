@@ -32,7 +32,7 @@
 ## 3. 与下游 codegen 的衔接
 
 - 落盘约定见 **catlass-operator-code-gen**：[custom-epilogue.md](../catlass-operator-code-gen/references/custom-epilogue.md)。
-- 设计文档中若出现自定义 Epilogue，**实现方案纲要**须点明：kernel 侧增加 `custom_epilogue/` 头文件、`op_kernel/CMakeLists.txt` 增加 `-I`。
+- 设计文档中若出现自定义 Epilogue，**实现方案纲要**须点明：kernel 侧增加 `custom_epilogue/` 头文件（目录下自动扫描，无需额外编译选项配置）。
 
 ---
 

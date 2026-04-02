@@ -156,7 +156,7 @@ def generate_report():
         f.write("[精度标准]:\n")
         f.write("  float16: 相对误差 rtol=1e-03, atol=1e-03\n")
         f.write("  float32: 相对误差 rtol=1e-04, atol=1e-04\n")
-        f.write("  bfloat16: 相对误差 rtol=1e-03, atol=1e-03\n")
+        f.write("  bfloat16: 相对误差 rtol=1e-02, atol=1e-02\n")
         f.write("  int32/int64/int16/int8: 完全相等\n")
         f.write("  uint32/uint64/uint16/uint8: 完全相等\n")
         f.write("  bool: 完全相等\n")

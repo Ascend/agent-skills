@@ -1,333 +1,456 @@
 ---
 name: ascendc-operator-dev
-description: "AscendC算子端到端开发编排器。当用户需要开发新算子、实现自定义算子、或完成从需求分析到测试验证的完整流程时使用。关键词：算子开发、operator development、端到端、完整流程、工作流编排。"
+description: "AscendC算子端到端开发编排器。当用户需要开发新算子、实现自定义算子、或完成从需求到测试的完整流程时使用。关键词：算子开发、operator development、端到端、完整流程、工作流编排、新建算子。"
 ---
 
 # AscendC 算子端到端开发编排
 
-**Skill类型**：流程导向型（多阶段工作流，子技能编排）
+**Skill类型**：流程导向型（七阶段工作流，子技能串行编排）
+
+本 skill 编排七个子 skill，驱动 ascend-kernel 算子从零到生产可用。
 
 ## 核心原则
 
-1. **设计文档前置**：用户必须提供算子设计文档，包含完整的 Tiling 策略和 Kernel 策略
-2. **子技能编排优先**：每个阶段必须调用对应的子 skill，不得自行实现
-3. **阶段门控**：每个阶段完成后必须验证检查点，通过后才能进入下一阶段
-4. **依赖串行**：kernel 依赖 tiling 数据结构，必须在同一 Sub-Agent 中串行执行
-5. **条件执行**：框架适配仅在用户需要时执行
+1. **七阶段串行**：工程初始化 → 设计文档 → 用例生成 → 代码生成&测试 → 接口文档 → 精度评估 → 性能评测，严格顺序执行
+2. **子技能执行**：每个阶段 **MUST** 调用对应子 skill，不得自行实现
+3. **阶段门控**：前一阶段检查点全部通过后才进入下一阶段
+4. **设计驱动编码**：代码生成依赖设计文档中的 Tiling 策略和 UB 分配表
+5. **自动化设计**：无需用户预先提供设计文档，设计阶段自动生成
+6. **用例统一生成**：设计完成后立即生成测试用例文档，供后续精度评估和性能评测复用
+7. **文档闭环**：编译测试通过后 **MUST** 生成 PyTorch 风格的中文接口文档，并在聊天界面展示
+8. **精度闭环**：算子必须通过 ≥30 例全面精度评估才算完成
+9. **性能闭环**：算子必须通过 msprof 性能对比评测，输出性能报告
+10. **结果可视化**：Phase 4/5/6/7 的结果 **MUST** 以 Markdown 形式直接展示在聊天界面中，不要仅输出路径
 
-## 工作流概览
+## 可用子 Skill 清单
+
+| Skill | 路径 | 职责 |
+|-------|------|------|
+| `ascendc-operator-project-init` | `ascendc-operator-project-init/SKILL.md` | 检测/创建 ascend-kernel 项目，生成算子骨架目录 |
+| `ascendc-operator-design` | `ascendc-operator-design/SKILL.md` | 分析算子需求，生成设计文档（含 Tiling 策略、UB 分配表） |
+| `ascendc-operator-testcase-gen` | `ascendc-operator-testcase-gen/SKILL.md` | 根据设计文档生成统一测试用例文档，供精度评估和性能评测复用 |
+| `ascendc-operator-code-gen` | `ascendc-operator-code-gen/SKILL.md` | 根据设计文档生成 op_host/op_kernel 代码、框架适配、编译测试 |
+| `ascendc-operator-compile-debug` | `ascendc-operator-compile-debug/SKILL.md` | 编译、安装 whl、生成测试文件、运行精度测试（由 code-gen 内部调用） |
+| `ascendc-operator-doc-gen` | `ascendc-operator-doc-gen/SKILL.md` | 从源码提取接口信息，生成 PyTorch 风格中文 API 文档（必选阶段） |
+| `ascendc-operator-precision-eval` | `ascendc-operator-precision-eval/SKILL.md` | 生成 ≥30 例精度测试、运行并输出精度验证报告（必选阶段） |
+| `ascendc-operator-performance-eval` | `ascendc-operator-performance-eval/SKILL.md` | 使用 msprof 对比工程算子与原生算子性能，输出性能评测报告（必选阶段） |
+
+## 工作流总览
 
 ```
-需求收集 → 工程初始化 → 代码生成 → 编译部署 → 文档生成 → [框架适配] → 精度验证
-                                                  ↑
-                                            条件执行
+Phase 1        Phase 2        Phase 3        Phase 4                      Phase 5        Phase 6         Phase 7
+工程初始化  ──▶ 设计文档  ──▶ 用例生成  ──▶ 代码生成+框架适配+编译测试  ──▶ 接口文档  ──▶ 精度评估报告  ──▶ 性能评测报告
+project-init   design         testcase-gen   code-gen → compile-debug      doc-gen        precision-eval  performance-eval
+
+输入: 算子名称 + 功能描述                              输出: 生产可用算子 + 用例文档 + 接口文档 + 精度报告 + 性能报告
 ```
-
-**前置条件**：用户必须提供算子设计文档（包含 Tiling 策略和 Kernel 策略）
-
-**产出物**：完整的算子实现代码、编译产物、文档、测试验证结果
-
-## 决策树
-
-| 用户请求 | 处理方式 |
-|----------|---------|
-| "快速开发 X 算子" + 提供设计文档 | 跳过详细解释，直接执行完整流程 |
-| "帮我开发新算子" + 无设计文档 | 提示用户需要提供设计文档，或引导使用 ascendc-operator-design skill |
-| "继续算子开发" | 恢复模式，询问用户当前阶段，从中断处继续 |
 
 ## 反模式清单（NEVER DO THESE）
 
-- ❌ 不要在用户未提供设计文档的情况下开始开发
-- ❌ 不要跳过必要的开发阶段
-- ❌ 不要忽略编译错误和警告
-- ❌ 不要跳过精度验证步骤
-- ❌ kernel代码生成必须等待tiling完成，不可并行
-- ❌ 不要自己实现算子代码，必须调用对应的子 skill
-- ❌ 不要跳过检查点验证，每个阶段必须验证完成后再进入下一阶段
+- ❌ 不要跳过设计阶段直接写代码
+- ❌ 不要跳过用例生成阶段，Phase 2 通过后必须执行 Phase 3（testcase-gen）
+- ❌ 不要自行实现任何算子代码，必须调用子 skill
+- ❌ 不要在代码生成之前修改框架文件（ops.h / register.cpp / CMakeLists.txt）
+- ❌ 不要手动执行编译和测试，统一由 compile-debug skill 处理
+- ❌ 不要引用不存在的 skill
+- ❌ 不要跳过检查点验证
+- ❌ 不要跳过接口文档阶段，Phase 4 通过后必须执行 Phase 5
+- ❌ 不要跳过精度评估阶段，Phase 5 通过后必须执行 Phase 6
+- ❌ 不要跳过性能评测阶段，Phase 6 通过后必须执行 Phase 7
+- ❌ 不要使用非 msprof 的计时方式作为性能结论
+- ❌ 精度评估和性能评测不要自行设计用例，必须先读取 testcase-gen 生成的用例文档
 
 ---
 
-## 阶段0：需求收集
+## Phase 0：需求收集
 
-**目标**：收集完成算子开发所需的所有信息
+**目标**：确认算子开发所需的最小信息集，包括开发环境和算子需求
+
+### Step 0.1：环境确认（MUST 在任何开发动作之前完成）
+
+开发环境是所有后续阶段的前置依赖，**必须首先确认**。
+
+#### CANN 环境
+
+**自动检测流程**：
+
+1. 检查环境变量 `ASCEND_HOME_PATH` 是否已设置（`echo $ASCEND_HOME_PATH`）
+2. **若已设置**：直接使用，无需询问用户，将其作为 `CANN_PATH`
+3. **若未设置**：**MUST** 向用户询问 CANN 安装路径（如 `/usr/local/Ascend/ascend-toolkit`）
+
+**激活方式**：
+
+```bash
+source ${CANN_PATH}/*/set_env.sh
+```
+
+> 在每个需要编译或运行算子的 Shell 会话中，都必须先执行此激活命令。
+
+#### Conda 环境
+
+**自动检测流程**：
+
+1. 检查当前是否已激活 conda 环境（`echo $CONDA_DEFAULT_ENV`）
+2. **若已激活**（值非 `base` 且非空）：直接使用当前环境，无需询问用户
+3. **若未激活或为 `base`**：**MUST** 向用户询问要使用的 conda 环境名称
+
+**激活方式**：
+
+```bash
+conda activate <env_name>
+```
+
+> 在每个需要编译或运行算子的 Shell 会话中，都必须先激活 conda 环境。
+
+#### 环境确认检查点
+
+- [ ] CANN 路径已确定（自动检测或用户提供）
+- [ ] `source ${CANN_PATH}/*/set_env.sh` 可正常执行
+- [ ] Conda 环境已确定（自动检测或用户提供）
+- [ ] `conda activate <env_name>` 可正常执行
+
+### Step 0.2：算子需求收集
 
 ### 必须确认的信息
 
 | 信息 | 格式要求 | 必填 | 说明 |
 |------|----------|------|------|
-| 算子名称 | snake_case | 是 | 如 `rms_norm`, `flash_attn` |
-| 设计文档 | markdown | **是** | **必须包含 Tiling 策略和 Kernel 策略** |
-| 功能描述 | 文本 | 是 | 算子的计算功能和业务场景 |
-| PyTorch适配 | boolean | 否 | 是否需要 PyTorch 框架接入 |
-| SoC平台 | string | 是 | 如 `ascend910b`, `ascend910_93` |
-| CANN路径 | path | 是 | CANN 安装目录 |
-| conda环境 | string | 否 | Python 虚拟环境名称 |
+| CANN 环境路径 | 绝对路径 | 是 | 自动检测 `$ASCEND_HOME_PATH`，未设置则询问用户 |
+| Conda 环境名称 | 字符串 | 是 | 自动检测 `$CONDA_DEFAULT_ENV`，未激活则询问用户 |
+| 算子名称 | snake_case | 是 | 如 `acosh`, `rms_norm`, `flash_attn` |
+| 功能描述 | 文本/数学公式 | 是 | 如 "反双曲余弦 acosh(x) = ln(x + sqrt(x²-1))" |
 
-### 设计文档要求（必须提供）
+**可选信息**（有默认值）：
 
-设计文档**必须包含**以下内容：
+| 信息 | 默认值 | 说明 |
+|------|--------|------|
+| 支持的数据类型 | float16, float32 | 可扩展 bfloat16 |
+| SoC平台 | ascend910b | 通过平台 API 自动获取 |
 
-1. **需求分析**
-   - 算子功能说明和数学公式
-   - 变量说明表
+### 决策树
 
-2. **原型设计**
-   - aclnn 接口定义
-   - 参数说明表
-   - 数据类型支持
-
-3. **规格约束**
-   - 输入/输出 Tensor 约束
-   - 硬件约束说明
-
-4. **Tiling 切分策略**
-   - 核间切分策略
-   - 核内循环策略
-   - UB 空间计算
-
-5. **Kernel 实现策略**
-   - 算子融合架构设计
-   - 向量计算实现
-   - 数据搬运流程
-
-**如果用户未提供设计文档**：
-- 提示用户需要提供设计文档
-- 或引导用户使用 `ascendc-operator-design` skill 先完成算子设计
+| 用户请求 | 处理方式 |
+|----------|---------|
+| "生成 X 算子" / "开发 X 算子" | 先完成环境确认（Step 0.1），再从算子名推断功能，确认后直接执行全流程 |
+| "帮我开发新算子"（无具体名称） | 先完成环境确认（Step 0.1），再询问算子名称和功能描述 |
+| "继续算子开发" | 先完成环境确认（Step 0.1），再检查已有文件判断阶段，从中断处继续 |
 
 ### 验收标准
 
+- [ ] CANN 环境路径已确定且可激活
+- [ ] Conda 环境名称已确定且可激活
 - [ ] 算子名称已确认（snake_case 格式）
-- [ ] **设计文档已提供且内容完整**
-- [ ] 功能描述已明确
-- [ ] SoC 平台已指定
-- [ ] CANN 路径已确认
-
-**只有当所有验收标准满足时**，才能进入阶段1。
+- [ ] 功能描述已明确（含数学公式或计算逻辑）
 
 ---
 
-## 阶段1：工程初始化
+## Phase 1：工程初始化
 
 **调用 Skill**：`ascendc-operator-project-init`
 
-**前置条件**：
-- 阶段0已完成
-- 设计文档已提供
-
-### 执行方式
+### 执行内容
 
 ```
-MANDATORY: 调用 ascendc-operator-project-init skill，按照该 skill 的流程执行：
-1. 检测算子工程位置
-2. 初始化工程环境（如需要）
-3. 收集算子信息
-4. 生成算子工程目录
+MANDATORY: 按 ascendc-operator-project-init skill 流程执行：
+1. 检测 ascend-kernel 项目是否存在
+2. 不存在则从模板复制
+3. 在 csrc/ops/<op_name>/ 下创建算子骨架
+4. 提示三处注册更新点
 ```
 
 ### 检查点
 
-- [ ] build.sh 文件存在
-- [ ] ops/<op_name>/ 目录创建完成
-- [ ] 目录结构完整（包含 op_host/, op_kernel/, examples/, tests/）
+- [ ] ascend-kernel 项目存在（build.sh、CMakeLists.txt、csrc/）
+- [ ] `csrc/ops/<op_name>/` 目录已创建
+- [ ] 包含 `op_host/<op_name>.cpp`、`op_kernel/<op_name>.cpp`、`CMakeLists.txt`、`design.md`
 
-**只有当所有检查点满足时**，才能进入阶段2。
+**全部通过 → 进入 Phase 2**
 
 ---
 
-## 阶段2：代码生成（Sub-Agent 串行执行）
+## Phase 2：设计文档生成
 
-**工具**：Task (subagent_type: general-purpose)
+**调用 Skill**：`ascendc-operator-design`
 
-**前置条件**：
-- 阶段1已完成
-- 设计文档已提供
-
-### 依赖说明
-
-**重要**：kernel 代码依赖 tiling 生成的数据结构定义，必须在同一 Sub-Agent 中串行执行。
-
-### Sub-Agent 任务描述
+### 执行内容
 
 ```
-执行 AscendC 算子代码生成任务：
-
-1. MANDATORY: 调用 ascendc-operator-tiling-code-gen skill
-   - 根据设计文档生成 op_host/ 目录下的代码
-   - 生成文件：_def.cpp, _infershape.cpp, _tiling.h, _tiling.cpp
-   - 验证：4 个文件生成完成
-
-2. MANDATORY: 调用 ascendc-operator-kernel-code-gen skill
-   - 根据设计文档生成 op_kernel/ 目录下的代码
-   - 生成文件：.h, .cpp
-   - 验证：2 个文件生成完成
-
-3. 返回生成结果：列出所有生成的文件路径
+MANDATORY: 按 ascendc-operator-design skill 流程执行：
+1. 分析算子需求（名称、功能、数据类型）
+2. 确定实现路径（AscendC Kernel / CATLASS / ACLNN）
+3. 设计 Tiling 策略（Block级 + UB级）
+4. 填写 UB 分配表，推导 bufferCoefficient
+5. 生成完整设计文档到 csrc/ops/<op_name>/design.md
 ```
 
 ### 检查点
 
-- [ ] op_host/<op_name>_def.cpp 生成完成
-- [ ] op_host/<op_name>_infershape.cpp 生成完成
-- [ ] op_host/<op_name>_tiling.h 生成完成
-- [ ] op_host/<op_name>_tiling.cpp 生成完成
-- [ ] op_kernel/<op_name>.h 生成完成
-- [ ] op_kernel/<op_name>.cpp 生成完成
+- [ ] `csrc/ops/<op_name>/design.md` 内容完整
+- [ ] 包含函数签名和支持的数据类型
+- [ ] 包含计算逻辑伪代码（AscendC API 调用序列）
+- [ ] 包含 UB 分配表（列出所有 buffer 及总系数）
+- [ ] 包含 bufferCoefficient（每种 dtype 的值）
 
-**只有当所有检查点满足时**，才能进入阶段3。
+**全部通过 → 进入 Phase 3**
 
 ---
 
-## 阶段3：编译部署（Sub-Agent）
+## Phase 3：测试用例生成
 
-**工具**：Task (subagent_type: general-purpose)
+**调用 Skill**：`ascendc-operator-testcase-gen`
 
-**前置条件**：
-- 阶段2已完成
-- 所有代码文件已生成
-
-### Sub-Agent 任务描述
+### 执行内容
 
 ```
-执行 AscendC 算子编译部署任务：
-
-MANDATORY: 调用 ascendc-operator-compile-debug skill，按照该 skill 的流程执行：
-
-1. CANN 环境配置
-   - 设置 ASCEND_HOME_PATH
-   - 验证环境变量
-
-2. 算子工程检查
-   - 验证工程结构完整性
-
-3. 环境检查
-   - 检查编译依赖
-
-4. 编译部署
-   - 执行编译命令
-   - 处理编译错误（最多重试 3 次）
-   - 生成 run 包
-
-5. 安装验证
-   - 安装 run 包
-
-返回编译结果：编译状态、run 包路径
+MANDATORY: 按 ascendc-operator-testcase-gen skill 流程执行：
+1. 读取 csrc/ops/<op_name>/design.md，提取参数约束、支持的 dtype、典型 shape
+2. 生成 TEST_SHAPES（常规 shape）、GENERAL_SHAPES（泛化 shape）、BOUNDARY_VALUES（边界值）
+3. 生成算子标杆（CPU 参考实现、NPU 调用方式）
+4. 输出用例文档到 csrc/ops/<op_name>/test/<op_name>-test-cases.md
 ```
 
 ### 检查点
 
-- [ ] 编译成功，无错误
-- [ ] run 包已生成（build_out/*.run）
-- [ ] run 包已安装
+- [ ] `csrc/ops/<op_name>/test/<op_name>-test-cases.md` 已生成
+- [ ] 包含 SUPPORTED_DTYPES、TEST_SHAPES、GENERAL_SHAPES、BOUNDARY_VALUES
+- [ ] 包含算子标杆（NPU 调用方式 + CPU 参考实现）
+- [ ] shape 和参数值均在 design.md 约束范围内
 
-**只有当所有检查点满足时**，才能进入阶段4。
+**全部通过 → 进入 Phase 4**
 
 ---
 
-## 阶段4：文档生成
+## Phase 4：代码生成 + 框架适配 + 编译测试
+
+**调用 Skill**：`ascendc-operator-code-gen`（内部自动调用 `ascendc-operator-compile-debug`）
+
+### 执行内容
+
+```
+MANDATORY: 按 ascendc-operator-code-gen skill 流程执行：
+
+阶段 1: 加载参考文档
+  - 读取 references/GUIDE.md
+  - 按算子类型加载对应 reference
+
+阶段 2: 读取设计文档
+  - 提取函数签名、UB 分配表、计算伪代码
+
+阶段 3: 选择模板并生成代码
+  - 选择 elementwise / row 模板
+  - 生成 op_host/<op_name>.cpp（含 Tiling 计算逻辑）
+  - 生成 op_kernel/<op_name>.cpp（含 Compute 计算逻辑）
+
+阶段 4: 框架适配
+  - 更新 csrc/ops.h（函数声明）
+  - 更新 csrc/register.cpp（m.def + m.impl）
+  - 更新 csrc/CMakeLists.txt（OP_SRCS + ascendc_library）
+
+阶段 5: 编译安装与测试（调用 compile-debug skill）
+  - ./build.sh 编译
+  - pip install whl 安装
+  - 生成 tests/test_<op_name>.py
+  - 运行功能测试和精度测试
+  - 编译/测试失败最多排错 3 次
+```
+
+### 检查点
+
+- [ ] `op_host/<op_name>.cpp` 使用平台 API 获取硬件参数
+- [ ] `op_kernel/<op_name>.cpp` 包含完整 CopyIn → Compute → CopyOut 流水线
+- [ ] `ops.h` 已添加函数声明
+- [ ] `register.cpp` 已添加 `m.def` 和 `m.impl`
+- [ ] `csrc/CMakeLists.txt` 已添加 host 和 kernel 源文件
+- [ ] 编译成功（whl 包已生成）
+- [ ] 功能测试通过（exit code 0）
+- [ ] 精度测试全部通过（pytest 全绿）
+
+**全部通过 → 进入 Phase 5**
+
+---
+
+## Phase 5：接口文档生成
 
 **调用 Skill**：`ascendc-operator-doc-gen`
 
-**前置条件**：
-- 阶段3已完成
-- 算子编译成功
-
-### 执行方式
+### 执行内容
 
 ```
-MANDATORY: 调用 ascendc-operator-doc-gen skill，按照该 skill 的流程执行：
-1. 定位算子源文件
-2. 提取参数信息
-3. 查阅映射表和模板
-4. 生成 README.md
-5. 生成 aclnn 文档
-```
+MANDATORY: 按 ascendc-operator-doc-gen skill 流程执行：
 
-### 输出产物
+阶段 1: 信息提取
+  - 从 register.cpp 提取 Python 调用签名（m.def schema）
+  - 从 ops.h 提取 C++ 函数声明和返回类型
+  - 从 design.md 提取算法描述、参数说明、dtype 支持、约束条件
+  - 从 op_host 提取 TORCH_CHECK 约束
+  - 从 tests/test_<op_name>.py 提取使用示例
 
-- ops/<op_name>/README.md
-- ops/<op_name>/docs/aclnn<OpName>.md
+阶段 2: 文档结构组装
+  - 按 PyTorch 官方文档风格组装中文接口文档
+  - 包含：标题签名 + 功能描述 + 参数说明 + 支持的数据类型 + Shape + 约束条件 + 使用示例 + 返回值
 
-### 检查点
+阶段 3: 文件生成
+  - 生成 csrc/ops/<op_name>/README.md
 
-- [ ] README.md 已生成
-- [ ] aclnn 文档已生成
-- [ ] 文档内容完整（参数说明、约束条件、调用示例）
-
----
-
-## 阶段5：框架适配（条件执行）
-
-**条件**：用户选择需要 PyTorch 适配
-
-**调用 Skill**：`ascendc-operator-frame-adapter-torch`
-
-**前置条件**：
-- 阶段3已完成
-- 算子已编译并安装
-
-### 执行方式
-
-```
-MANDATORY: 调用 ascendc-operator-frame-adapter-torch skill，按照该 skill 的流程执行：
-1. 分析用户需求并规划 torch 接口
-2. 检查并初始化模板工程
-3. 生成适配代码文件
-4. 注册算子接口
-5. 更新构建配置
-6. 编译验证
-7. 生成测试用例
-8. 功能测试
-9. 精度测试（可选）
+阶段 4: 在交互界面展示完整文档内容
 ```
 
 ### 检查点
 
-- [ ] torch 接口已定义
-- [ ] 适配代码已生成
-- [ ] 编译成功
-- [ ] Python 测试通过
+- [ ] 从源代码提取了完整的接口信息（签名、参数、dtype、shape、约束）
+- [ ] README.md 包含完整的 7 个段落（标题签名 + 功能描述 + 参数说明 + 支持的数据类型 + Shape + 约束条件 + 使用示例 + 返回值）
+- [ ] Python 调用签名与 `register.cpp` 的 `m.def` 一致
+- [ ] 参数说明使用 PyTorch 文档风格，描述使用中文
+- [ ] 使用示例中的代码可运行
+- [ ] README.md 已写入 `csrc/ops/<op_name>/README.md`
+- [ ] **接口文档已在聊天界面完整展示**
+
+**全部通过 → 进入 Phase 6**
 
 ---
 
-## 阶段6：精度验证
+## Phase 6：精度评估报告
 
 **调用 Skill**：`ascendc-operator-precision-eval`
 
-**前置条件**：
-- 阶段3已完成（或阶段5，如需 PyTorch 适配）
-
-### 执行方式
+### 执行内容
 
 ```
-MANDATORY: 调用 ascendc-operator-precision-eval skill，按照该 skill 的流程执行：
-1. 准备测试数据
-2. 生成 CPU 参考数据
-3. 执行单标杆/双标杆验证
-4. 分析误差指标
-5. 生成精度报告
+MANDATORY: 按 ascendc-operator-precision-eval skill 流程执行：
+
+阶段 1: 加载用例文档 + 信息收集
+  - 读取 csrc/ops/<op_name>/test/<op_name>-test-cases.md（testcase-gen 产出）
+  - 提取 SUPPORTED_DTYPES、TEST_SHAPES、GENERAL_SHAPES、BOUNDARY_VALUES、算子标杆
+  - 从已有代码补充提取精度阈值等信息
+
+阶段 2: 用例适配（(shapes + boundary) × dtypes ≥ 30 例）
+  - 直接复用 testcase-gen 的 TEST_SHAPES 和 BOUNDARY_VALUES
+  - 每个 shape / 边界值遍历算子支持的全部 dtype
+
+阶段 3: 测试脚本生成（输出到算子目录 csrc/ops/<op_name>/test/）
+  - 基于模板生成 test_<op_name>_precision.py（pytest 格式）
+  - 基于模板生成 run_<op_name>_precision_report.py（报告生成器）
+
+阶段 4: 执行
+  - 运行 pytest 全部通过
+  - 运行报告生成器输出 JSON
+
+阶段 5: 报告生成
+  - 生成 <op_name>_precision_report.md（含常规 shape + 边界值表格 + 汇总 + 关键发现）
+  - 向用户提示报告路径
 ```
 
 ### 检查点
 
-- [ ] 精度测试已执行
-- [ ] 误差指标在阈值范围内
-- [ ] 精度报告已生成
+- [ ] 用例数 = (shapes + boundary) × dtypes ≥ 30
+- [ ] 算子支持的每种 dtype 都已测试
+- [ ] pytest 精度测试全部通过
+- [ ] JSON 报告生成（含 5 个精度指标: MaxAbsErr / MeanAbsErr / MaxRelErr / MeanRelErr / CosineSim）
+- [ ] Markdown 报告生成于 `csrc/ops/<op_name>/test/<op_name>_precision_report.md`
+- [ ] **精度测试结果已以 Markdown 表格形式展示在聊天界面**
+- [ ] 已向用户提示精度报告路径
+
+**全部通过 → 进入 Phase 7**
 
 ---
+
+## Phase 7：性能评测报告
+
+**调用 Skill**：`ascendc-operator-performance-eval`
+
+### 执行内容
+
+```
+MANDATORY: 按 ascendc-operator-performance-eval skill 流程执行：
+
+阶段 1: 加载用例文档 + 信息收集
+  - 读取 csrc/ops/<op_name>/test/<op_name>-test-cases.md（testcase-gen 产出）
+  - 提取 SUPPORTED_DTYPES、TEST_SHAPES、GENERAL_SHAPES、算子标杆
+  - 从已有代码补充提取 OP Type 关键字等信息
+
+阶段 2: 用例适配（JSONL 格式，≥8 case）
+  - 从 testcase-gen 的 TEST_SHAPES + GENERAL_SHAPES 中选取代表性 shape
+  - 覆盖算子支持的全部 dtype
+  - 转换为 JSONL 格式
+
+阶段 3: 脚本生成（输出到算子目录 csrc/ops/<op_name>/test/）
+  - 基于模板生成 run_<op_name>_case.py（单 case msprof 执行器）
+  - 基于模板生成 benchmark_<op_name>_msprof.py（总控脚本）
+  - 生成 <op_name>_cases.jsonl
+
+阶段 4: 执行采集
+  - 运行总控脚本，每 case 20 次迭代（前 10 次预热）
+  - 按 OP Type 从 op_summary_*.csv 提取 Task Duration(us) 和硬件指标
+  - 输出 JSON 结果
+
+阶段 5: 报告生成
+  - 生成 <op_name>_perf_report.md（含结果表格 + 汇总 + 简短分析）
+  - 向用户提示报告路径
+```
+
+### 检查点
+
+- [ ] JSONL 用例覆盖多种 shape × dtype（≥ 8 case）
+- [ ] 使用 `msprof` 采集，非其他计时方式
+- [ ] 按 `OP Type` 筛选目标算子（非 Op Name）
+- [ ] 20/10 预热/统计策略
+- [ ] JSON 报告生成（含 Task Duration + 硬件指标）
+- [ ] Markdown 报告生成于 `csrc/ops/<op_name>/test/<op_name>_perf_report.md`
+- [ ] 报告包含简短分析（≥ 3 条结论）
+- [ ] **性能测试结果已以 Markdown 表格形式展示在聊天界面**
+- [ ] 已向用户提示性能报告路径
+
+**全部通过 → 算子开发完成**
+
+---
+
+## 阶段间数据流
+
+```
+Phase 1 输出                    Phase 2 输入
+  csrc/ops/<op_name>/    ────▶    算子名称、目录结构
+  design.md (占位)
+
+Phase 2 输出                    Phase 3 输入
+  design.md (完整)       ────▶    参数约束、支持的 dtype、典型 shape
+                                  → 生成统一测试用例文档
+
+Phase 3 输出                    Phase 4 输入
+  <op_name>-test-cases.md ────▶    design.md (完整)
+  （用例文档，供后续复用）          函数签名、UB 分配表 → bufferCoefficient
+                                  计算伪代码 → Compute 逻辑
+                                  Tiling 策略 → Block/UB 切分参数
+
+Phase 4 输出                    Phase 5 输入
+  已安装的算子 whl        ────▶    register.cpp / ops.h / design.md /
+  tests/test_<op_name>.py        op_host / test 文件
+                                  → 提取接口信息生成文档
+
+Phase 5 输出                    Phase 6 输入
+  csrc/ops/<op>/README.md ────▶    <op_name>-test-cases.md（来自 Phase 3）
+  接口文档完成                     算子名、调用方式、输入域约束
+                                  支持的全部 dtype、精度阈值
+                                  → 输出到 csrc/ops/<op_name>/test/
+
+Phase 6 输出                    Phase 7 输入
+  精度报告通过             ────▶    <op_name>-test-cases.md（来自 Phase 3）
+  csrc/ops/<op>/test/            算子名、工程/原生调用方式
+                                  支持的全部 dtype、OP Type 关键字
+                                  → 输出到 csrc/ops/<op_name>/test/
+```
 
 ## 状态跟踪表
 
-| 阶段 | 前置条件 | 调用 Skill | 检查点 |
-|------|----------|------------|--------|
-| 0. 需求收集 | 无 | - | 设计文档+5项信息已确认 |
-| 1. 工程初始化 | 阶段0完成 | ascendc-operator-project-init | build.sh存在，ops/<op_name>/创建 |
-| 2. 代码生成 | 阶段1完成 | Sub-Agent (tiling + kernel) | 6个文件生成完成 |
-| 3. 编译部署 | 阶段2完成 | Sub-Agent (compile-debug) | 编译通过，run包安装 |
-| 4. 文档生成 | 阶段3完成 | ascendc-operator-doc-gen | README.md + aclnn文档 |
-| 5. 框架适配 | 阶段3完成（条件） | ascendc-operator-frame-adapter-torch | torch绑定 + Python测试 |
-| 6. 精度验证 | 阶段3/5完成 | ascendc-operator-precision-eval | 误差指标达标 |
-
----
+| Phase | 前置条件 | 调用 Skill | 关键产出物 |
+|-------|----------|------------|-----------|
+| 0. 需求收集 | 无 | — | CANN 路径 + Conda 环境 + 算子名称 + 功能描述 |
+| 1. 工程初始化 | Phase 0 | `ascendc-operator-project-init` | 算子骨架目录 |
+| 2. 设计文档 | Phase 1 | `ascendc-operator-design` | design.md（含 Tiling + UB 分配表） |
+| 3. 用例生成 | Phase 2 | `ascendc-operator-testcase-gen` | `<op_name>-test-cases.md`（统一用例文档） |
+| 4. 代码&测试 | Phase 3 | `ascendc-operator-code-gen` → `compile-debug` | 可运行算子 + 基本测试通过 |
+| 5. 接口文档 | Phase 4 | `ascendc-operator-doc-gen` | PyTorch 风格中文 API 文档 (README.md) |
+| 6. 精度评估 | Phase 5 | `ascendc-operator-precision-eval` | ≥30 例精度测试 + 精度报告 |
+| 7. 性能评测 | Phase 6 | `ascendc-operator-performance-eval` | msprof 性能对比 + 性能报告 |
 
 ## 错误恢复
 
@@ -335,26 +458,20 @@ MANDATORY: 调用 ascendc-operator-precision-eval skill，按照该 skill 的流
 
 当用户说"继续算子开发"时：
 
-1. 检查 ops/<op_name>/ 目录状态
-2. 根据已完成的文件判断当前阶段
-3. 询问用户确认当前阶段
-4. 从该阶段继续执行
+| 检测条件 | 判定阶段 | 恢复动作 |
+|----------|----------|----------|
+| `csrc/ops/<op_name>/` 不存在 | Phase 1 未完成 | 从 Phase 1 开始 |
+| `design.md` 为占位或空 | Phase 2 未完成 | 从 Phase 2 开始 |
+| `csrc/ops/<op_name>/test/<op_name>-test-cases.md` 不存在 | Phase 3 未完成 | 从 Phase 3 开始 |
+| `op_host/` 仍为骨架代码 | Phase 4 未完成 | 从 Phase 4 开始 |
+| whl 未生成 | Phase 4 编译未完成 | 从编译步骤恢复 |
+| 基本测试未通过 | Phase 4 测试未完成 | 从测试步骤恢复 |
+| `csrc/ops/<op_name>/README.md` 不存在 | Phase 5 未完成 | 从 Phase 5 开始 |
+| `csrc/ops/<op_name>/test/` 无精度报告 | Phase 6 未开始 | 从 Phase 6 开始 |
+| 精度报告不存在或精度测试未全部通过 | Phase 6 未完成 | 从 Phase 6 恢复 |
+| 精度报告存在但性能报告不存在 | Phase 7 未开始 | 从 Phase 7 开始 |
+| `<op_name>_perf_report.md` 不存在或不完整 | Phase 7 未完成 | 从 Phase 7 恢复 |
 
-### 阶段判断依据
+### 编译/测试失败
 
-| 已存在文件 | 当前阶段 |
-|------------|----------|
-| 无 ops/<op_name>/ | 从阶段1开始 |
-| ops/<op_name>/ 存在，无 op_host/*.cpp | 从阶段2开始 |
-| 代码文件存在，无 build_out/*.run | 从阶段3开始 |
-| run包存在，无 README.md | 从阶段4开始 |
-
----
-
-## 注意事项
-
-1. **设计文档必须提供**：用户必须提供包含 Tiling 策略和 Kernel 策略的设计文档
-2. **代码生成依赖**：kernel 依赖 tiling 数据结构，必须在同一 Sub-Agent 串行执行
-3. **条件执行**：框架适配仅在用户需要 PyTorch 适配时执行
-4. **阶段门控**：每个阶段必须验证检查点后才能进入下一阶段
-5. **所有算子统一生成在 ops 目录下**
+由 `ascendc-operator-compile-debug` skill 内部处理，最多排错 3 次。3 次仍失败则停止并向用户报告详细错误。

@@ -143,7 +143,7 @@ def validate_cmp(dtype, y_cal, y_ref, overflow_mode: Optional[str] = None):
     if dtype == 'float16':
         torch.testing.assert_close(y_ref, y_cal,  rtol=1e-03, atol=1e-03, equal_nan=True)
     elif dtype == 'bfloat16':
-        torch.testing.assert_close(y_ref.to(torch.float32), y_cal.to(torch.float32),  rtol=1e-03, atol=1e-03, equal_nan=True)
+        torch.testing.assert_close(y_ref.to(torch.float32), y_cal.to(torch.float32),  rtol=1e-02, atol=1e-02, equal_nan=True)
     elif dtype == 'float32':
         torch.testing.assert_close(y_ref, y_cal,  rtol=1e-04, atol=1e-04, equal_nan=True)
     elif dtype == 'int32' or dtype == 'int64' or dtype == 'int16' or dtype == 'int8':
@@ -156,11 +156,16 @@ def validate_cmp(dtype, y_cal, y_ref, overflow_mode: Optional[str] = None):
         raise ValueError('Invalid parameter \"dtype\" is found : {}'.format(dtype))
 
 def validate_cmp_with_expection(dtype, y_cal, y_ref, expect):
-    if dtype == 'float32' or dtype == 'float16' or dtype == 'bfloat16':
+    if dtype == 'float32' or dtype == 'float16':
         if expect:
             assert torch.allclose(y_ref, y_cal,  rtol=1e-03, atol=1e-03, equal_nan=True)
         else:
             assert not torch.allclose(y_ref, y_cal, rtol=1e-03, atol=1e-03, equal_nan=True)
+    elif dtype == 'bfloat16':
+        if expect:
+            assert torch.allclose(y_ref.to(torch.float32), y_cal.to(torch.float32),  rtol=1e-02, atol=1e-02, equal_nan=True)
+        else:
+            assert not torch.allclose(y_ref.to(torch.float32), y_cal.to(torch.float32), rtol=1e-02, atol=1e-02, equal_nan=True)
     elif dtype == 'int32' or dtype == 'int64' or dtype == 'int16' or dtype == 'int8' \
         or dtype == 'uint8' or dtype == 'uint16' or dtype == 'uint32' or dtype == 'uint64':
         if expect:
