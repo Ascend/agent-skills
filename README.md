@@ -69,6 +69,30 @@ agent-skills/
 └── .gitignore                      # Git 忽略配置
 ```
 
+## 安装 Skills
+
+建议使用 [Skills 管理工具](https://github.com/vercel-labs/skills)（`npx skills`）来灵活安装 Skills。以下为**常用命令示例**：
+
+```bash
+# 列出 ascend/agent-skills 仓库中包含的所有 Skills
+npx skills add ascend/agent-skills --list
+
+# 安装指定的某个或某几个 Skills
+npx skills add ascend/agent-skills --skill ascend-inference-repos-copilot --skill ascendc-operator-testcase-gen
+
+# 将 Skills 安装到特定的 Agent（例如 trae 和 opencode）
+npx skills add ascend/agent-skills -a trae -a opencode
+
+# 非交互式安装（适合 CI/CD 场景）：安装指定 Skill 到 opencode，自动确认
+npx skills add ascend/agent-skills --skill ascend-inference-repos-copilot -g -a opencode -y
+
+# 安装仓库中的所有 Skills 到全部 Agents
+npx skills add ascend/agent-skills --all
+
+# 安装仓库中的所有 Skills 到指定的多个 Agent
+npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
+```
+
 ## SKILL 索引目录
 
 >目前共收录 **47** 个 SKILL。
