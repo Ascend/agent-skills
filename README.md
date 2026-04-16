@@ -95,7 +95,7 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 
 ## SKILL 索引目录
 
->目前共收录 **47** 个 SKILL。
+>目前共收录 **52** 个 SKILL。
 > 分类共 **7** 大类，便于按需快速定位。
 
 | # | 分类名称 | 包含 SKILL 数 | 简述 |
@@ -103,7 +103,7 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | A |[AscendC 算子开发](#a-AscendC-算子开发)    |         9 | 覆盖 AscendC 算子从工程初始化、方案设计、Host/Tiling/Kernel 代码生成，到编译调试、精度验证、框架适配与文档生成的完整开发链路。 |
 | B | [Catlass 算子开发](#b-Catlass-算子开发)    |         5 | 面向 Catlass 算子的设计、环境导入、代码生成、端到端开发与性能调优，适合 Catlass 算子实现与优化场景。                   |
 | C | [Triton 算子开发](#c-Triton-算子开发)      |         9 | 覆盖 Triton 算子需求分析、环境配置、代码生成、代码审查、性能评估、性能优化、精度验证与文档生成等全流程能力。                    |
-| D | [迁移适配与性能优化](#d-迁移适配与性能优化) |         8 | 聚焦 GPU 到昇腾 NPU 的迁移适配、Triton Vector 类算子优化、Megatron 到 MindSpeed 的迁移分析与生成，以及 Profiling 异常分析与性能瓶颈定位。            |
+| D | [迁移适配与性能优化](#d-迁移适配与性能优化) |        13 | 聚焦 GPU 到昇腾 NPU 的迁移适配、Triton Vector 类算子优化、Megatron 到 MindSpeed 的迁移分析与生成、MindSpeed-MM FSDP2 端到端迁移编排，以及 Profiling 异常分析与性能瓶颈定位。            |
 | E | [环境搭建与设备管理](#e-环境搭建与设备管理)  |         4 | 提供 Ascend 开发环境搭建、CANN 安装、npu-smi 设备管理与 HCCL 通信测试等基础设施能力。                      |
 | F | [推理生态与工程辅助](#f-推理生态与工程辅助)      |         4 | 面向模型推理部署与工程辅助，涵盖模型转换、昇腾推理生态问答、vLLM-ascend FAQ 生成与 Skill 安全审计。                 |
 | G | [自动化测试与覆盖率](#g-自动化测试与覆盖率)       |         8 | 聚焦测试生成、pytest/unittest 编写、覆盖率分析、代码理解、每日回归日志分析与 MindSpeed-LLM 测试执行，提升测试质量与自动化水平。        |
@@ -160,6 +160,11 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | skills/megatron-change-analyzer | 将 Megatron-LM 原始变更提升为特性演进事件，识别新特性、breaking risk 与迁移相关项。分析上游变化影响时使用 | 迁移适配与性能优化 |
 | skills/megatron-impact-mapper | 将 Megatron 变更映射到官方 MindSpeed 仓库的候选适配点，并处理分支对齐关系。评估迁移落点与适配范围时使用 | 迁移适配与性能优化 |
 | skills/megatron-migration-generator | 基于 impact report 生成面向 MindSpeed 的迁移报告、patch 参考包或受控代码改动。准备具体迁移交付物时使用 | 迁移适配与性能优化 |
+| skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-migration-main | 统筹 MindSpeed-MM FSDP2 迁移全流程（门禁、子技能调度、交付收口）。需要端到端迁移编排时使用 | 迁移适配与性能优化 |
+| skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-model-migration | 将源模型适配到 MindSpeed-MM FSDP2 模型注册与加载契约。模型侧迁移时使用 | 迁移适配与性能优化 |
+| skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-data-migration | 将源数据集适配到 MindSpeed-MM FSDP2 数据插件结构。数据侧迁移时使用 | 迁移适配与性能优化 |
+| skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-config-migration | 将源训练配置映射到 MindSpeed-MM FSDP2 YAML 契约（plugin 关联、strict/extra 分层、并行配置）。配置侧迁移时使用 | 迁移适配与性能优化 |
+| skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-verification | 对迁移产物执行功能与可靠性门禁验收并沉淀证据。迁移交付前验证时使用 | 迁移适配与性能优化 |
 
 ### E 环境搭建与设备管理
 
