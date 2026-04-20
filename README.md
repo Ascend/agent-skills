@@ -165,7 +165,8 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-data-migration | 将源数据集适配到 MindSpeed-MM FSDP2 数据插件结构。数据侧迁移时使用 | 迁移适配与性能优化 |
 | skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-config-migration | 将源训练配置映射到 MindSpeed-MM FSDP2 YAML 契约（plugin 关联、strict/extra 分层、并行配置）。配置侧迁移时使用 | 迁移适配与性能优化 |
 | skills/mindspeed-mm-fsdp2-migration/mindspeed-fsdp2-verification | 对迁移产物执行功能与可靠性门禁验收并沉淀证据。迁移交付前验证时使用 | 迁移适配与性能优化 |
-
+| skills/ascend-model-migration | 基于 DrivingSDK 自动迁移传统自动驾驶模型，完成环境搭建、三方库（mmlab等）安装、应用对应模型patch。迁移模型时使用。 | 迁移适配与性能优化 |
+| skills/model-migration-analysis | 基于 DrivingSDK 提供新的自动驾驶模型（传统感知模型、规控模型、VLA世界模型等）适配到昇腾NPU平台的分析报告。迁移新开源模型时使用。 | 迁移适配与性能优化 |
 ### E 环境搭建与设备管理
 
 | 相对路径 | 功能说明 | 分类 |
