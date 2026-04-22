@@ -42,6 +42,8 @@ Ascend Agent-Skills 是一个基于开源 Agent 能力提供 Skills 参考的核
 
 **文档存放**：SKILL 文件夹内不能包含 `README.md`。所有文档内容内化于 `SKILL.md` 中，或存放于 `references/` 目录下。
 
+**使用教程**：当前 Skills 使用教程汇总见 [docs/tutorials.md](docs/tutorials.md)，可快速查看各类实战教程入口。
+
 ## 项目架构设计
 
 ### 整体架构
