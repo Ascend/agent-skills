@@ -89,6 +89,7 @@ AscendC 算子采用**两级 Tiling 策略**来充分利用硬件并行能力。
 - 逐元素操作: `references/elementwise-tiling.md`
 - 归约操作: `references/reduction-tiling.md`
 - 索引操作: `references/index-tiling.md`
+- 排序操作: `references/sort-tiling.md`
 - 通用原则: `references/general-tiling-principles.md`
 
 ### 3.1 Tiling参数结构体定义

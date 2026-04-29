@@ -391,6 +391,10 @@ int64_t bufferSize = AlignTo32(tileLength * dtypeSize, dtypeSize);
   |
   No
   v
+排序操作? --Yes--> Sort Tiling (see sort-tiling.md)
+  |
+  No
+  v
 其他复杂操作? --Yes--> 自定义 Tiling (参考通用原则)
   |
   No
