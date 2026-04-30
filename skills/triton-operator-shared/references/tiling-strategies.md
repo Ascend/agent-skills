@@ -291,6 +291,32 @@ mean_buffer_size = 32  # 实际分配大小
 mean_buffer = allocate_ub(mean_buffer_size)  # 分配 32 字节
 ```
 
+### 512B 对齐（矩阵运算推荐）
+
+NPU 芯片更加亲和 512B 对齐场景。矩阵乘法中：
+
+| 数据类型 | 512B 对应元素数 | Cube 粒度倍数 |
+|---------|---------------|-------------|
+| FP16 (2B) | 256 | 16 |
+| FP32 (4B) | 128 | 8 |
+| BF16 (2B) | 256 | 16 |
+
+**最优 BLOCK 大小**（FP16 矩阵乘法）：
+- BLOCK_M=128, BLOCK_N=256, BLOCK_K=256: 填满 L0A 64KB
+- BLOCK_M=256, BLOCK_N=128, BLOCK_K=256: 填满 L0B 64KB
+
+**UB 估算公式**（矩阵乘法）：
+```python
+def estimate_ub_usage(BLOCK_M, BLOCK_N, BLOCK_K, dtype_size=2):
+    a_tile = BLOCK_M * BLOCK_K * dtype_size
+    b_tile = BLOCK_K * BLOCK_N * dtype_size
+    accumulator = BLOCK_M * BLOCK_N * 4  # FP32
+    mask = BLOCK_M * BLOCK_N
+    return a_tile + b_tile + accumulator + mask
+
+# 安全系数：实际需求 × 0.8（编译器有 ~15% 额外开销）
+```
+
 ## 典型算子的 Tiling 策略
 
 ### 案例 1：LayerNorm
@@ -359,11 +385,32 @@ mean_buffer = allocate_ub(mean_buffer_size)  # 分配 32 字节
    - 将 K 维度分块，每次加载部分 A 和 B
    - 累加部分结果
    - UB 需求：
-     ```
-     A 块缓冲区: tile_m × tile_k × 2B
-     B 块缓冲区: tile_k × tile_n × 2B
-     C 累加缓冲区: tile_m × tile_n × 4B
-     ```
+      ```
+      A 块缓冲区: tile_m × tile_k × 2B
+      B 块缓冲区: tile_k × tile_n × 2B
+      C 累加缓冲区: tile_m × tile_n × 4B
+      ```
+
+#### 大矩阵优化：对角线 Grid 调度
+
+**问题**：传统逐行调度（Core 0 处理 M 行块 0-3，Core 1 处理块 4-7）导致同一 L2 cache line 被多个 Core 竞争访问。
+
+**解决方案**：块沿 M×N 网格对角线分布，减少冲突，提升 L2 缓存命中率。
+
+**适用条件**：NUM_BLOCKS_M >= BLOCK_THRESHOLD 且 NUM_BLOCKS_N >= BLOCK_THRESHOLD（通常 BLOCK_THRESHOLD=4-8）
+
+**实现**：
+```python
+for block_idx in range(pid, NUM_BLOCKS, num_cores):
+    if NUM_BLOCKS_M >= BLOCK_THRESHOLD and NUM_BLOCKS_N >= BLOCK_THRESHOLD:
+        # 对角线调度
+        task_m_idx = block_idx % NUM_BLOCKS_M
+        task_n_idx = (block_idx // NUM_BLOCKS_M) % NUM_BLOCKS_N
+    else:
+        # 顺序调度
+        task_m_idx = block_idx // NUM_BLOCKS_N
+        task_n_idx = block_idx % NUM_BLOCKS_N
+```
 
 ## Tiling 策略设计检查清单
 
@@ -372,6 +419,7 @@ mean_buffer = allocate_ub(mean_buffer_size)  # 分配 32 字节
 - [ ] 切分维度选择合理（考虑数据独立性）
 - [ ] 负载均衡（每个 Core 处理的数据量相近）
 - [ ] 无跨核通信（每个 Core 独立完成任务）
+- [ ] 大矩阵是否使用对角线调度（BLOCK_THRESHOLD 检查）
 - [ ] 边界处理正确（最后一个 Core 的数据范围）
 
 ### 核内切分检查

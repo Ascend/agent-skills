@@ -46,3 +46,30 @@ aligned_bytes = ((actual_bytes + 31) // 32) * 32
 - **矩阵乘法累加器用 FP32**
 - **数据搬运**：GM ↔ UB/L1，应减少 GM 访问次数、提高数据复用
 - **Block 对齐**：矩阵运算 BLOCK_M/N/K 必须为 16 倍数（Cube 单元粒度）
+
+## HIVM IR 映射参考
+
+### Triton 构造到 HIVM IR 的映射
+
+| Triton 构造 | HIVM IR | 说明 |
+|-------------|---------|------|
+| `tl.load()` | `hivm.load` | PIPE_MTE2 (GM→UB) |
+| `tl.store()` | `hivm.store` | PIPE_MTE3 (UB→GM) |
+| `tl.dot()` | Cube `mmad` | PIPE_M (矩阵计算) |
+| 元素操作 (add/sub/mul) | `hivm.vexp`, `hivm.vabs`, `hivm.vadd` | PIPE_V (向量计算) |
+| `tl.parallel(bind_sub_block=True)` | `get_sub_block_idx`/`get_sub_block_num` | 分配到 vector cores |
+| `sync_block_set/wait` | `hivm.sync_block` [SET/WAIT] | Cube-Vector 信号同步 |
+| `tl.gather()` | `hivm.gather` | 向量 gather |
+| `tl.index_select()` | `hivm.index_select` | embedding gather |
+| `tl.sort()` | `hivm.sort` | 硬件加速排序 |
+
+### HIVM 指令管道映射
+
+| HIVM 管道 | 对应 Triton 操作 | 说明 |
+|-----------|-----------------|------|
+| PIPE_S | 标量计算 | 整数除法、循环控制 |
+| PIPE_V | 向量计算 | 逐元素操作、归约、激活 |
+| PIPE_M | 矩阵计算 | `tl.dot`、矩阵乘法 |
+| PIPE_MTE1 | UB ↔ GM | Vector 的 `tl.load`/`tl.store` |
+| PIPE_MTE2 | L1 ↔ GM | Cube 的输入加载 |
+| PIPE_MTE3 | L1 ↔ GM | Cube 的结果写回 |
