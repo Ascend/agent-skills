@@ -95,8 +95,8 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 
 ## SKILL 索引目录
 
->目前共收录 **52** 个 SKILL。
-> 分类共 **7** 大类，便于按需快速定位。
+>目前共收录 **60** 个 SKILL。
+> 分类共 **8** 大类，便于按需快速定位。
 
 | # | 分类名称 | 包含 SKILL 数 | 简述 |
 |---|---------|:---:|------|
@@ -107,6 +107,7 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | E | [环境搭建与设备管理](#e-环境搭建与设备管理)  |         4 | 提供 Ascend 开发环境搭建、CANN 安装、npu-smi 设备管理与 HCCL 通信测试等基础设施能力。                      |
 | F | [推理生态与工程辅助](#f-推理生态与工程辅助)      |         4 | 面向模型推理部署与工程辅助，涵盖模型转换、昇腾推理生态问答、vLLM-ascend FAQ 生成与 Skill 安全审计。                 |
 | G | [自动化测试与覆盖率](#g-自动化测试与覆盖率)       |         8 | 聚焦测试生成、pytest/unittest 编写、覆盖率分析、代码理解、每日回归日志分析与 MindSpeed-LLM 测试执行，提升测试质量与自动化水平。        |
+| H | [ATB 算子迁移](#h-atb-算子迁移) | 8 | 覆盖昇腾 Transformer 加速库（ATB）的 NNAL 安装、测试框架编译、算子设计文档生成、CSV 测试用例生成、OPS→ACLNN 算子迁移、CSV 测试执行及调试全流程，支持 910B/950 设备。 |
 
 ---
 
@@ -197,6 +198,19 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | skills/mindspeed-llm-auto-ut-skills/skills/run-mindspeed-llm-test | 在 Docker 中执行 MindSpeed-LLM 项目测试用例。运行单元测试或覆盖率扫描时使用 | 自动化测试与覆盖率 |
 | skills/mindspeed-llm-auto-ut-skills/skills/unittest-writer | Python unittest 框架测试用例编写助手（setUp/tearDown、断言、组织模式）。编写或优化 unittest 风格测试用例时使用 | 自动化测试与覆盖率 |
 | skills/msverl-daily-regression-triage | 自动读取 msverl 每日回归结果与训练日志，提取高信号失败证据并排序可疑提交。日常回归报错分析与问题分诊时使用 | 自动化测试与覆盖率 |
+
+### H ATB 算子迁移
+
+| 相对路径 | 功能说明 | 分类 |
+|---------|---------|------|
+| skills/ascend-transformer-boost/skills/atb-nnal-installer | 昇腾 NPU NNAL（ATB 加速库）安装，需配合 cann-operator-env-config。安装 NNAL run 包或从 Docker 提取 NNAL 时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-testframework-build | 编译 ATB 测试框架（含 GitHub→gitcode 源替换、ABI 检测）。编译 ATB 测试框架或运行 CSV 测试前使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-aclnn-operator-replacement-designer | ATB→ACLNN 算子替换设计文档生成（7 章结构化文档、参数映射分析）。撰写算子替换设计文档时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-csv-testcase-generator | ATB CSV 泛化测试用例生成（正例/反例/性能测试，覆盖 910B/950）。为 ATB 算子生成 CSV 测试用例时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-aclnn-operator-migration | OPS→ACLNN 算子迁移实现（创建 ACLNN Runner、设备检测切换）。执行算子代码迁移时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-csv-tester | 运行 ATB CSV 测试用例并解析结果（910B 设备）。验证算子正确性时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-debug-guide | ATB 调试指南（ABI 版本、内存错误、Tensor 维度、ACLNN 函数签名）。分析 ATB 编译/测试失败时使用 | ATB 算子迁移 |
+| skills/ascend-transformer-boost/skills/atb-ops-to-aclnn-migration-workflow | OPS→ACLNN 标准化迁移工作流模板（7 阶段 + HIL Gate 机制）。启动完整迁移任务时作为流程参考 | ATB 算子迁移 |
 
 ---
 
