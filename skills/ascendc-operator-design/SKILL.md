@@ -49,6 +49,7 @@ description: 完成AscendC算子设计 - 帮助用户完成算子的架构设计
    - 归约操作（softmax/layernorm...）→ `references/reduction-tiling.md`
    - 索引操作（gather/index_select/scatter...）→ `references/index-tiling.md`
    - 排序操作（sort/topk...）→ `references/sort-tiling.md`
+   - 池化操作（avgpool/maxpool/...）→ `references/pooling-tiling.md`
 3. **通用参考**: `references/general-tiling-principles.md`
 
 **绝对不要跳过参考文档的阅读。**
@@ -141,6 +142,7 @@ Ln(y, tmp, len);             // y = ln(x + sqrt(x² - 1))
 - **归约操作**: 阅读 `references/reduction-tiling.md`
 - **索引操作**: 阅读 `references/index-tiling.md`
 - **排序操作**: 阅读 `references/sort-tiling.md`
+- **池化操作**: 阅读 `references/pooling-tiling.md`
 - **通用原则**: 参考 `references/general-tiling-principles.md`
 
 #### 3.3 硬件约束说明
