@@ -95,19 +95,21 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 
 ## SKILL 索引目录
 
->目前共收录 **60** 个 SKILL。
+
+>目前共收录 **61** 个 SKILL。
 > 分类共 **8** 大类，便于按需快速定位。
 
 | # | 分类名称 | 包含 SKILL 数 | 简述 |
-|---|---------|:---:|------|
-| A |[AscendC 算子开发](#a-AscendC-算子开发)    |         9 | 覆盖 AscendC 算子从工程初始化、方案设计、Host/Tiling/Kernel 代码生成，到编译调试、精度验证、框架适配与文档生成的完整开发链路。 |
-| B | [Catlass 算子开发](#b-Catlass-算子开发)    |         5 | 面向 Catlass 算子的设计、环境导入、代码生成、端到端开发与性能调优，适合 Catlass 算子实现与优化场景。                   |
-| C | [Triton 算子开发](#c-Triton-算子开发)      |         9 | 覆盖 Triton 算子需求分析、环境配置、代码生成、代码审查、性能评估、性能优化、精度验证与文档生成等全流程能力。                    |
-| D | [迁移适配与性能优化](#d-迁移适配与性能优化) |        13 | 聚焦 GPU 到昇腾 NPU 的迁移适配、Triton Vector 类算子优化、Megatron 到 MindSpeed 的迁移分析与生成、MindSpeed-MM FSDP2 端到端迁移编排，以及 Profiling 异常分析与性能瓶颈定位。            |
-| E | [环境搭建与设备管理](#e-环境搭建与设备管理)  |         4 | 提供 Ascend 开发环境搭建、CANN 安装、npu-smi 设备管理与 HCCL 通信测试等基础设施能力。                      |
-| F | [推理生态与工程辅助](#f-推理生态与工程辅助)      |         4 | 面向模型推理部署与工程辅助，涵盖模型转换、昇腾推理生态问答、vLLM-ascend FAQ 生成与 Skill 安全审计。                 |
-| G | [自动化测试与覆盖率](#g-自动化测试与覆盖率)       |         8 | 聚焦测试生成、pytest/unittest 编写、覆盖率分析、代码理解、每日回归日志分析与 MindSpeed-LLM 测试执行，提升测试质量与自动化水平。        |
+|---|---------|:----------:|------|
+| A |[AscendC 算子开发](#a-AscendC-算子开发)    |     9      | 覆盖 AscendC 算子从工程初始化、方案设计、Host/Tiling/Kernel 代码生成，到编译调试、精度验证、框架适配与文档生成的完整开发链路。 |
+| B | [Catlass 算子开发](#b-Catlass-算子开发)    |     5      | 面向 Catlass 算子的设计、环境导入、代码生成、端到端开发与性能调优，适合 Catlass 算子实现与优化场景。                   |
+| C | [Triton 算子开发](#c-Triton-算子开发)      |     9      | 覆盖 Triton 算子需求分析、环境配置、代码生成、代码审查、性能评估、性能优化、精度验证与文档生成等全流程能力。                    |
+| D | [迁移适配与性能优化](#d-迁移适配与性能优化) |     13     | 聚焦 GPU 到昇腾 NPU 的迁移适配、Triton Vector 类算子优化、Megatron 到 MindSpeed 的迁移分析与生成、MindSpeed-MM FSDP2 端到端迁移编排，以及 Profiling 异常分析与性能瓶颈定位。            |
+| E | [环境搭建与设备管理](#e-环境搭建与设备管理)  |     5      | 提供 Ascend 开发环境搭建、CANN 安装、npu-smi 设备管理与 HCCL 通信测试等基础设施能力。                      |
+| F | [推理生态与工程辅助](#f-推理生态与工程辅助)      |     4      | 面向模型推理部署与工程辅助，涵盖模型转换、昇腾推理生态问答、vLLM-ascend FAQ 生成与 Skill 安全审计。                 |
+| G | [自动化测试与覆盖率](#g-自动化测试与覆盖率)       |     8      | 聚焦测试生成、pytest/unittest 编写、覆盖率分析、代码理解、每日回归日志分析与 MindSpeed-LLM 测试执行，提升测试质量与自动化水平。        |
 | H | [ATB 算子迁移](#h-atb-算子迁移) | 8 | 覆盖昇腾 Transformer 加速库（ATB）的 NNAL 安装、测试框架编译、算子设计文档生成、CSV 测试用例生成、OPS→ACLNN 算子迁移、CSV 测试执行及调试全流程，支持 910B/950 设备。 |
+
 
 ---
 
@@ -170,12 +172,13 @@ npx skills add ascend/agent-skills --skill '*' -a trae -a opencode
 | skills/model-migration-analysis | 基于 DrivingSDK 提供新的自动驾驶模型（传统感知模型、规控模型、VLA世界模型等）适配到昇腾NPU平台的分析报告。迁移新开源模型时使用。 | 迁移适配与性能优化 |
 ### E 环境搭建与设备管理
 
-| 相对路径 | 功能说明 | 分类 |
-|---------|---------|------|
-| skills/ascend-docker | 创建 Ascend NPU 开发用 Docker 容器（设备映射、卷挂载、多模式支持）。搭建容器化 NPU 开发环境时使用 | 环境搭建与设备管理 |
-| skills/cann-installer | 昇腾 NPU CANN 安装指导（驱动检查、toolkit 安装、环境变量配置）。安装或配置 CANN 开发环境时使用 | 环境搭建与设备管理 |
-| skills/npu-smi | Huawei Ascend NPU npu-smi 命令参考（设备查询、配置、固件升级、虚拟化）。查询设备状态或管理 NPU 硬件时使用 | 环境搭建与设备管理 |
-| skills/hccl-test | HCCL 集合通信性能测试（AllReduce、AllGather 等，含多机预检）。分布式训练场景下测试通信带宽与功能时使用 | 环境搭建与设备管理 |
+| 相对路径                  | 功能说明                                                                 | 分类 |
+|-----------------------|----------------------------------------------------------------------|------|
+| skills/ascend-docker  | 创建 Ascend NPU 开发用 Docker 容器（设备映射、卷挂载、多模式支持）。搭建容器化 NPU 开发环境时使用        | 环境搭建与设备管理 |
+| skills/cann-installer | 昇腾 NPU CANN 安装指导（驱动检查、toolkit 安装、环境变量配置）。安装或配置 CANN 开发环境时使用          | 环境搭建与设备管理 |
+| skills/npu-smi        | Huawei Ascend NPU npu-smi 命令参考（设备查询、配置、固件升级、虚拟化）。查询设备状态或管理 NPU 硬件时使用 | 环境搭建与设备管理 |
+| skills/hccl-test      | HCCL 集合通信性能测试（AllReduce、AllGather 等，含多机预检）。分布式训练场景下测试通信带宽与功能时使用      | 环境搭建与设备管理 |
+| skills/k8s-check-fix  | 检查k8s环境状况，并修复k8s环境bug（也可以用于远程服务器上的k8s）。发现k8s出现bug时使用                 |     环境搭建与设备管理      |
 
 ### F 推理生态与工程辅助
 
